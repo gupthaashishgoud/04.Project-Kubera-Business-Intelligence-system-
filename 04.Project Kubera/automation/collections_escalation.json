@@ -1,0 +1,200 @@
+{
+  "$schema": "https://n8n.io/schemas/workflow.json",
+  "name": "Project Kubera — Collections Escalation & Recovery",
+  "description": "Auto-escalates overdue accounts based on AI recovery probability. Routes high-probability to settlement offers and low-probability to legal proceedings.",
+  "version": 1,
+  "tags": ["nbfc", "collections", "recovery", "ai"],
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none"
+  },
+  "nodes": [
+    {
+      "id": "trigger-daily",
+      "name": "Daily 8AM Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "query-overdue",
+      "name": "Query Overdue Accounts",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [200, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT c.collection_id, c.loan_id, c.customer_id, c.bucket, c.overdue_amount, c.ai_recovery_prob, c.ai_recommendation, c.settlement_offer, cu.customer_name, cu.contact_phone FROM fact_collections c JOIN dim_customer cu ON c.customer_id = cu.customer_id WHERE c.status = 'Active' AND c.overdue_amount > 0;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": { "id": "postgres-kubera", "name": "Kubera DB" }
+      }
+    },
+    {
+      "id": "route-by-prob",
+      "name": "Route by Recovery Prob",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 2,
+      "position": [400, 0],
+      "parameters": {
+        "rules": {
+          "rules": [
+            {
+              "value": "high",
+              "output": 0,
+              "condition": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "={{ $json.ai_recovery_prob }}",
+                  "type": "number",
+                  "operation": {
+                    "type": "gt",
+                    "value": 70
+                  }
+                }
+              }
+            },
+            {
+              "value": "medium",
+              "output": 1,
+              "condition": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "={{ $json.ai_recovery_prob }}",
+                  "type": "number",
+                  "operation": {
+                    "type": "between",
+                    "value": 50,
+                    "value2": 70
+                  }
+                }
+              }
+            },
+            {
+              "value": "low",
+              "output": 2,
+              "condition": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "={{ $json.ai_recovery_prob }}",
+                  "type": "number",
+                  "operation": {
+                    "type": "lt",
+                    "value": 50
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "send-settlement",
+      "name": "Send Settlement Offer",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [600, -150],
+      "parameters": {
+        "operation": "send",
+        "to": "={{ $json.contact_phone }}",
+        "from": "+1234567890",
+        "message": "=Dear {{ $json.customer_name }}, your loan account shows an overdue of Rs.{{ $json.overdue_amount }}. We are offering a one-time settlement of Rs.{{ $json.settlement_offer }}. Pay now: https://pay.kuberafinance.com/settle/{{ $json.collection_id }}",
+        "options": {}
+      },
+      "credentials": {
+        "twilioApi": { "id": "twilio-kubera", "name": "Kubera Twilio" }
+      }
+    },
+    {
+      "id": "notify-agent",
+      "name": "Notify Collections Agent",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [600, 0],
+      "parameters": {
+        "fromEmail": "collections@kuberafinance.com",
+        "toEmail": "agent@kuberafinance.com",
+        "subject": "Field Visit Required — Account #{{ $json.collection_id }}",
+        "text": "Account {{ $json.collection_id }} ({{ $json.customer_name }}) has recovery probability {{ $json.ai_recovery_prob }}%. Bucket: {{ $json.bucket }}. Overdue: Rs.{{ $json.overdue_amount }}. Please schedule field visit.",
+        "options": {}
+      }
+    },
+    {
+      "id": "initiate-legal",
+      "name": "Initiate Legal Proceedings",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [600, 150],
+      "parameters": {
+        "method": "POST",
+        "url": "https://legal.kuberafinance.com/v1/sarfaesi/initiate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "loan_id": "={{ $json.loan_id }}",
+          "customer_id": "={{ $json.customer_id }}",
+          "overdue_amount": "={{ $json.overdue_amount }}",
+          "bucket": "={{ $json.bucket }}"
+        }
+      }
+    },
+    {
+      "id": "log-action",
+      "name": "Log Escalation Action",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [800, 0],
+      "parameters": {
+        "operation": "insert",
+        "table": "escalation_log",
+        "columns": {
+          "mapping": [
+            { "column": "collection_id", "value": "={{ $json.collection_id }}" },
+            { "column": "action_type", "value": "={{ $json.action_type }}" },
+            { "column": "ai_recovery_prob", "value": "={{ $json.ai_recovery_prob }}" },
+            { "column": "executed_at", "value": "={{ $now }}" }
+          ]
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Daily 8AM Trigger": {
+      "main": [[{ "node": "Query Overdue Accounts", "type": "main", "index": 0 }]]
+    },
+    "Query Overdue Accounts": {
+      "main": [[{ "node": "Route by Recovery Prob", "type": "main", "index": 0 }]]
+    },
+    "Route by Recovery Prob": {
+      "main": [
+        [{ "node": "Send Settlement Offer", "type": "main", "index": 0 }],
+        [{ "node": "Notify Collections Agent", "type": "main", "index": 0 }],
+        [{ "node": "Initiate Legal Proceedings", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Settlement Offer": {
+      "main": [[{ "node": "Log Escalation Action", "type": "main", "index": 0 }]]
+    },
+    "Notify Collections Agent": {
+      "main": [[{ "node": "Log Escalation Action", "type": "main", "index": 0 }]]
+    },
+    "Initiate Legal Proceedings": {
+      "main": [[{ "node": "Log Escalation Action", "type": "main", "index": 0 }]]
+    }
+  }
+}

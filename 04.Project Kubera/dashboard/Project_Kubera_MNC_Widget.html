@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Kubera — Financial Operations & Decision Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:#F7F7F5; color:#111315; line-height:1.65; -webkit-font-smoothing:antialiased; }
+#app { max-width:1200px; margin:0 auto; }
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:rgba(0,0,0,0.15); border-radius:3px; }
+
+/* ===== HEADER — light masthead, navy accent ===== */
+.hero { background:#FFFFFF; padding:46px 40px 38px; }
+.brand { display:flex; align-items:flex-start; gap:22px; }
+.logo { width:58px; height:58px; flex:none; background:#1E3A5F; border-radius:14px; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:1.5rem; font-weight:800; color:#FFFFFF; box-shadow:0 8px 24px rgba(30,58,95,0.18); }
+.hero h1 { margin:0; font-size:clamp(1.6rem,3vw,2.2rem); font-weight:800; color:#111315; letter-spacing:-1.5px; line-height:1.1; }
+.hero-sub { margin:6px 0 18px; font-family:'Playfair Display',serif; font-style:italic; font-size:1.05rem; color:#5A5F66; }
+.meta { display:flex; gap:8px; flex-wrap:wrap; }
+.badge { background:#FFFFFF; color:#5A5F66; padding:6px 14px; border-radius:100px; font-size:0.72rem; border:1px solid rgba(17,19,21,0.10); font-weight:600; cursor:default; transition:all 0.3s ease; }
+.badge:hover { border-color:#1E3A5F; color:#1E3A5F; transform:translateY(-2px); box-shadow:0 1px 2px rgba(17,19,21,0.04); }
+
+/* ===== TABS — white bar, navy underline ===== */
+.tabs { display:flex; gap:0; background:#FFFFFF; border-top:1px solid rgba(17,19,21,0.06); border-bottom:1px solid rgba(17,19,21,0.08); overflow-x:auto; }
+.tab { flex:1; min-width:148px; padding:14px 12px 12px; border:none; background:transparent; cursor:pointer; text-align:center; transition:all 0.25s ease; border-bottom:2px solid transparent; display:flex; flex-direction:column; gap:2px; color:#8B9097; font-family:'Inter',sans-serif; }
+.tab:hover { background:rgba(17,19,21,0.02); color:#111315; }
+.tab.active { border-bottom-color:#1E3A5F; background:rgba(30,58,95,0.04); color:#111315; }
+.tab-num { font-family:'JetBrains Mono',monospace; font-size:0.95rem; font-weight:700; color:#A8ACB2; transition:color 0.25s ease; }
+.tab.active .tab-num { color:#1E3A5F; }
+.tab-label { font-size:0.78rem; font-weight:600; }
+.tab-role { font-size:0.62rem; font-weight:500; text-transform:uppercase; letter-spacing:1px; color:#A8ACB2; }
+
+.panel { display:none; padding:32px 32px 12px; }
+.panel.active { display:block; }
+.h2 { margin:0 0 6px; font-size:1.5rem; color:#111315; font-weight:800; letter-spacing:-0.8px; }
+.meta2 { font-family:'JetBrains Mono',monospace; color:#8B9097; font-size:0.75rem; margin:0 0 26px; }
+
+/* ===== KPI CARDS — centered, airy, semantic top accent ===== */
+.kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+.kpi {
+  background:#FFFFFF;
+  border:1px solid rgba(17,19,21,0.08);
+  border-radius:14px;
+  padding:26px 18px 24px;
+  border-top:3px solid rgba(17,19,21,0.10);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  min-height:132px;
+  transition:all 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+.kpi:hover { transform:translateY(-3px); box-shadow:0 12px 32px rgba(17,19,21,0.07); }
+.kpi.g { border-top-color:#27AE60; }
+.kpi.a { border-top-color:#E67E22; }
+.kpi.r { border-top-color:#C0392B; }
+.kpi.b { border-top-color:#1E3A5F; }
+.kpi.p { border-top-color:#6B5B95; }
+.kpi-l { font-size:0.68rem; font-weight:700; color:#8B9097; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:11px; line-height:1.4; }
+.kpi-v { font-family:'JetBrains Mono',monospace; font-size:1.45rem; font-weight:800; color:#111315; margin-bottom:9px; line-height:1.25; letter-spacing:-0.5px; }
+.kpi-d { font-size:0.75rem; color:#A8ACB2; text-align:center; line-height:1.55; max-width:24ch; }
+
+/* ===== CARDS ===== */
+.card { background:#FFFFFF; border:1px solid rgba(17,19,21,0.08); border-radius:14px; padding:26px; margin-bottom:20px; box-shadow:0 1px 2px rgba(17,19,21,0.03); }
+.card h3 { margin:0 0 18px; font-size:1.02rem; color:#111315; font-weight:700; letter-spacing:-0.3px; }
+.two { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.three { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+.four { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:14px; }
+
+/* ===== TABLES — hairline rows, editorial headers ===== */
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+th { text-align:left; padding:10px 10px 12px; border-bottom:1px solid rgba(17,19,21,0.10); color:#8B9097; font-weight:700; font-size:0.66rem; text-transform:uppercase; letter-spacing:1.2px; white-space:nowrap; }
+td { padding:11px 10px; border-bottom:1px solid rgba(17,19,21,0.05); color:#5A5F66; font-variant-numeric:tabular-nums; }
+td strong { color:#111315; font-weight:600; }
+tbody tr:last-child td { border-bottom:none; }
+tbody tr:hover td { background:#F7F7F5; }
+.pos { color:#1E8449; font-weight:600; }
+.neg { color:#C0392B; font-weight:600; }
+.neu { color:#8B9097; }
+td.a { color:#B45309; font-weight:600; }
+
+/* ===== PILLS — soft tints on light ===== */
+.pill { padding:4px 12px; border-radius:100px; font-size:0.68rem; font-weight:600; display:inline-block; white-space:nowrap; }
+.pill.g { background:rgba(39,174,96,0.10); color:#1E8449; }
+.pill.a { background:rgba(230,126,34,0.10); color:#B45309; }
+.pill.r { background:rgba(192,57,43,0.08); color:#C0392B; }
+.pill.b { background:rgba(30,58,95,0.07); color:#1E3A5F; }
+.pill.p { background:rgba(107,91,149,0.10); color:#6B5B95; }
+.pill.gr { background:#F0EFEA; color:#8B9097; }
+
+/* ===== ALERT CARDS — left accent bar, left-aligned for readability ===== */
+.alert {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  text-align:left;
+  padding:18px 20px;
+  border-radius:12px;
+  background:#FFFFFF;
+  margin-bottom:12px;
+  border:1px solid rgba(17,19,21,0.08);
+  border-left:3px solid rgba(17,19,21,0.15);
+  gap:10px;
+}
+.alert:last-child { margin-bottom:0; }
+.alert.h { border-left-color:#C0392B; }
+.alert.m { border-left-color:#E67E22; }
+.alert.l { border-left-color:#1E3A5F; }
+.alert-s { font-family:'JetBrains Mono',monospace; font-size:0.62rem; font-weight:700; letter-spacing:1.5px; padding:3px 10px; border-radius:100px; }
+.alert.h .alert-s { background:rgba(192,57,43,0.08); color:#C0392B; }
+.alert.m .alert-s { background:rgba(230,126,34,0.10); color:#B45309; }
+.alert.l .alert-s { background:rgba(30,58,95,0.07); color:#1E3A5F; }
+.alert-b { flex:1; }
+.alert-b strong { display:block; margin-bottom:5px; font-size:0.92rem; color:#111315; line-height:1.45; font-weight:700; }
+.alert-b p { margin:0; font-size:0.82rem; color:#5A5F66; line-height:1.65; }
+
+/* ===== BUTTONS ===== */
+.btn { padding:7px 16px; border-radius:8px; border:1px solid rgba(17,19,21,0.12); background:#FFFFFF; color:#5A5F66; cursor:pointer; font-size:0.74rem; font-weight:600; font-family:'Inter',sans-serif; transition:all 0.3s ease; }
+.btn:hover { border-color:#1E3A5F; color:#1E3A5F; }
+.btn-p { padding:7px 16px; border-radius:8px; border:none; background:#1E3A5F; color:#FFFFFF; cursor:pointer; font-size:0.74rem; font-weight:600; font-family:'Inter',sans-serif; transition:all 0.3s ease; }
+.btn-p:hover { background:#2D5A8E; transform:translateY(-1px); box-shadow:0 4px 12px rgba(30,58,95,0.20); }
+.btn-g { padding:7px 16px; border-radius:8px; border:none; background:#1E8449; color:#FFFFFF; cursor:pointer; font-size:0.74rem; font-weight:600; font-family:'Inter',sans-serif; transition:all 0.3s ease; }
+.btn-g:hover { background:#27AE60; transform:translateY(-1px); box-shadow:0 4px 12px rgba(30,132,73,0.20); }
+
+/* ===== BAR CHARTS — soulful muted palette retained ===== */
+.bar-chart { display:flex; flex-direction:column; gap:14px; }
+.bar-g { display:flex; align-items:center; gap:12px; }
+.bar-l { width:130px; flex:none; font-size:0.8rem; font-weight:600; color:#5A5F66; }
+.bar-t { flex:1; height:16px; background:rgba(17,19,21,0.05); border-radius:100px; overflow:hidden; }
+.bar-f { height:100%; border-radius:100px; }
+.bar-f.home { background:linear-gradient(90deg,#4A6741,#5A7D4F); }
+.bar-f.gold { background:linear-gradient(90deg,#8B7355,#A68B6A); }
+.bar-f.msme { background:linear-gradient(90deg,#5B8A72,#6BA084); }
+.bar-f.vehicle { background:linear-gradient(90deg,#6B5B95,#7D6DA8); }
+.bar-f.personal { background:linear-gradient(90deg,#8B4557,#9F5A6B); }
+.bar-f.risk { background:linear-gradient(90deg,#4A6741,#5A7D4F); }
+.bar-f.human { background:linear-gradient(90deg,#5B8A72,#6BA084); }
+.bar-f.disb { background:linear-gradient(90deg,#1E3A5F,#2D5A8E); }
+.bar-f.repay { background:linear-gradient(90deg,#4A6741,#5A7D4F); }
+.bar-f.cross { background:linear-gradient(90deg,#8B7355,#A68B6A); }
+.bar-f.doc { background:linear-gradient(90deg,#8B7355,#A68B6A); }
+.bar-f.nurse { background:linear-gradient(90deg,#6B5B95,#7D6DA8); }
+.bar-f.sales { background:linear-gradient(90deg,#5B8A72,#6BA084); }
+.bar-f.admin { background:linear-gradient(90deg,#5A5F66,#8B9097); }
+.bar-v { width:100px; flex:none; font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:#8B9097; text-align:right; }
+
+/* ===== TIMELINE ===== */
+.tl { display:flex; flex-direction:column; gap:12px; }
+.tl-i { display:flex; gap:14px; align-items:flex-start; padding:16px 18px; border-radius:12px; background:#FFFFFF; border:1px solid rgba(17,19,21,0.08); border-left:3px solid #1E3A5F; }
+.tl-i.d { border-left-color:#27AE60; }
+.tl-i.p { border-left-color:#E67E22; }
+.tl-dot { font-size:1.05rem; min-width:26px; text-align:center; }
+.tl-b { flex:1; }
+.tl-b strong { display:block; font-size:0.9rem; color:#111315; }
+.tl-b p { margin:3px 0; font-size:0.8rem; color:#5A5F66; }
+.tl-a { font-size:0.74rem; color:#1E3A5F; font-weight:600; cursor:pointer; }
+.tl-a:hover { text-decoration:underline; }
+
+/* ===== AI RECOMMENDATION CARDS — warm gold tint (Kubera identity) ===== */
+.ai-rec { background:#FAF7EF; border:1px solid rgba(180,150,60,0.18); border-left:3px solid #D4AC0D; border-radius:12px; padding:20px 22px; margin-bottom:14px; }
+.ai-rec:last-child { margin-bottom:0; }
+.ai-rec h4 { margin:0 0 8px; font-size:0.94rem; color:#92610A; line-height:1.45; font-weight:700; }
+.ai-rec p { margin:0 0 8px; font-size:0.83rem; color:#5A5F66; line-height:1.65; }
+.ai-rec p strong, .ai-rec .conf strong { color:#111315; font-weight:600; }
+.ai-rec .conf { font-size:0.78rem; color:#8B9097; line-height:1.6; }
+.ai-rec .action { margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; }
+
+/* ===== METRIC TILES ===== */
+.metric { text-align:center; padding:20px 14px; border-radius:12px; background:#F7F7F5; border:1px solid rgba(17,19,21,0.05); display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.metric-v { font-family:'JetBrains Mono',monospace; font-size:1.35rem; font-weight:800; color:#111315; letter-spacing:-0.5px; line-height:1.2; }
+.metric-l { font-size:0.66rem; font-weight:700; text-transform:uppercase; letter-spacing:1.2px; color:#8B9097; margin-top:8px; line-height:1.5; }
+
+/* ===== WATERFALL ===== */
+.wf { display:flex; flex-direction:column; gap:6px; }
+.wf-r { display:flex; justify-content:space-between; align-items:center; font-size:0.86rem; padding:5px 0; color:#5A5F66; }
+.wf-r.t { font-weight:700; color:#111315; border-top:1px solid rgba(17,19,21,0.15); padding-top:10px; margin-top:4px; }
+.wf-vp { color:#1E8449; font-weight:600; font-family:'JetBrains Mono',monospace; font-size:0.8rem; }
+.wf-vn { color:#C0392B; font-weight:600; font-family:'JetBrains Mono',monospace; font-size:0.8rem; }
+.wf-vn2 { color:#111315; font-weight:700; font-family:'JetBrains Mono',monospace; font-size:0.8rem; }
+.wf-b { height:6px; border-radius:3px; }
+
+/* ===== FOOTER ===== */
+.foot { text-align:center; padding:32px 24px 36px; color:#8B9097; font-size:0.8rem; border-top:1px solid rgba(17,19,21,0.06); margin-top:20px; line-height:1.7; }
+.foot strong { color:#5A5F66; }
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:1024px){
+  .panel { padding:24px 20px 8px; }
+}
+@media(max-width:900px){
+  .kpi-row { grid-template-columns:repeat(2,1fr); }
+  .two,.three { grid-template-columns:1fr; }
+  .four { grid-template-columns:repeat(2,1fr); }
+  .hero { padding:36px 24px 30px; }
+  .hero h1 { font-size:1.5rem; letter-spacing:-0.8px; }
+  .bar-l { width:104px; }
+  .bar-v { width:86px; }
+}
+@media(max-width:560px){
+  .kpi-row { grid-template-columns:1fr; }
+  .four { grid-template-columns:1fr; }
+  .brand { flex-direction:column; gap:16px; }
+  .panel { padding:20px 14px 8px; }
+  .card { padding:20px 16px; }
+  .bar-l { width:92px; font-size:0.74rem; }
+  .bar-v { width:78px; font-size:0.66rem; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+<header class="hero">
+  <div class="brand">
+    <div class="logo">K</div>
+    <div>
+      <h1>PROJECT KUBERA</h1>
+      <p class="hero-sub">Financial Operations & Decision Intelligence Platform</p>
+      <div class="meta">
+        <span class="badge">Rs.18,000 Cr AUM</span>
+        <span class="badge">Rs.2,400 Cr Loan Portfolio</span>
+        <span class="badge">250 Branches</span>
+        <span class="badge">4,000 Employees</span>
+        <span class="badge">1.2M Customers</span>
+        <span class="badge">AI-Assisted Operations</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="act1" onclick="switchTab('act1')"><span class="tab-num">1</span><span class="tab-label">CEO Morning</span><span class="tab-role">CEO</span></button>
+  <button class="tab" data-tab="act2" onclick="switchTab('act2')"><span class="tab-num">2</span><span class="tab-label">Sales Command</span><span class="tab-role">COO</span></button>
+  <button class="tab" data-tab="act3" onclick="switchTab('act3')"><span class="tab-num">3</span><span class="tab-label">Journey Intel</span><span class="tab-role">Customer Head</span></button>
+  <button class="tab" data-tab="act4" onclick="switchTab('act4')"><span class="tab-num">4</span><span class="tab-label">Risk & AI</span><span class="tab-role">CRO</span></button>
+  <button class="tab" data-tab="act5" onclick="switchTab('act5')"><span class="tab-num">5</span><span class="tab-label">Collections</span><span class="tab-role">Collections Mgr</span></button>
+  <button class="tab" data-tab="act6" onclick="switchTab('act6')"><span class="tab-num">6</span><span class="tab-label">Portfolio Health</span><span class="tab-role">CFO</span></button>
+  <button class="tab" data-tab="act7" onclick="switchTab('act7')"><span class="tab-num">7</span><span class="tab-label">Compliance</span><span class="tab-role">CCO</span></button>
+  <button class="tab" data-tab="act8" onclick="switchTab('act8')"><span class="tab-num">8</span><span class="tab-label">AI Strategy</span><span class="tab-role">Executive</span></button>
+</nav>
+
+<!-- ACT 1: CEO Morning Dashboard -->
+<section id="act1" class="panel active">
+  <h2 class="h2">Act 1 — CEO Executive Morning Dashboard</h2>
+  <p class="meta2">Daily 08:00 AM | "What happened? Why? What action? What impact?"</p>
+
+  <div class="kpi-row">
+    <div class="kpi g"><div class="kpi-l">AUM</div><div class="kpi-v">Rs.18,042 Cr</div><div class="kpi-d">+0.8% vs yesterday</div></div>
+    <div class="kpi b"><div class="kpi-l">Loan Portfolio</div><div class="kpi-v">Rs.2,418 Cr</div><div class="kpi-d">+1.2% MTD</div></div>
+    <div class="kpi a"><div class="kpi-l">NPA %</div><div class="kpi-v">2.14%</div><div class="kpi-d">Target: &lt;2.5% OK</div></div>
+    <div class="kpi p"><div class="kpi-l">Collection Efficiency</div><div class="kpi-v">94.6%</div><div class="kpi-d">Target: >93% OK</div></div>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h3>Executive Action Queue</h3>
+      <div class="alert h">
+        <div class="alert-s">HIGH</div>
+        <div class="alert-b"><strong>Home Loan NPA Spiking in South Region</strong><p>NPA in TN/AP/Kerala branches jumped from 1.8% to 2.9% in 30 days. 47 accounts flagged. Root cause: IT sector layoffs in Chennai.</p></div>
+        <button class="btn" onclick="alert('CRO briefing scheduled for 10:00 AM')">Brief CRO</button>
+      </div>
+      <div class="alert m">
+        <div class="alert-s">MED</div>
+        <div class="alert-b"><strong>Gold Loan Demand Surging +34%</strong><p>Festival season + agrarian cycle driving demand. 12 branches at capacity. Recommend: Activate 3 satellite centers.</p></div>
+        <button class="btn" onclick="alert('COO notified to activate satellite centers')">Notify COO</button>
+      </div>
+      <div class="alert l">
+        <div class="alert-s">LOW</div>
+        <div class="alert-b"><strong>Digital Adoption Crossed 65%</strong><p>Mobile app logins up 18% MoM. Self-service KYC now 42% of total. Target: 70% by Q3.</p></div>
+        <button class="btn" onclick="alert('Marketing team alerted for Q3 push')">Alert Marketing</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Portfolio Mix — Rs.2,418 Cr</h3>
+      <div class="bar-chart">
+        <div class="bar-g"><div class="bar-l">Home Loans</div><div class="bar-t"><div class="bar-f home" style="width:38%"></div></div><div class="bar-v">Rs.918 Cr</div></div>
+        <div class="bar-g"><div class="bar-l">Gold Loans</div><div class="bar-t"><div class="bar-f gold" style="width:24%"></div></div><div class="bar-v">Rs.580 Cr</div></div>
+        <div class="bar-g"><div class="bar-l">MSME Loans</div><div class="bar-t"><div class="bar-f msme" style="width:18%"></div></div><div class="bar-v">Rs.435 Cr</div></div>
+        <div class="bar-g"><div class="bar-l">Vehicle Loans</div><div class="bar-t"><div class="bar-f vehicle" style="width:12%"></div></div><div class="bar-v">Rs.290 Cr</div></div>
+        <div class="bar-g"><div class="bar-l">Personal Loans</div><div class="bar-t"><div class="bar-f personal" style="width:8%"></div></div><div class="bar-v">Rs.195 Cr</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Branch Performance Heatmap — Top 10 / Bottom 10</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Rank</th><th>Branch</th><th>Region</th><th>Disbursal MTD</th><th>NPA %</th><th>Collection Eff</th><th>Digital %</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><strong>Begumpet HQ</strong></td><td>Hyderabad</td><td>Rs.12.4 Cr</td><td class="pos">1.2%</td><td class="pos">97.2%</td><td>78%</td><td><span class="pill g">Top</span></td></tr>
+          <tr><td>2</td><td><strong>Ameerpet</strong></td><td>Hyderabad</td><td>Rs.9.8 Cr</td><td class="pos">1.4%</td><td class="pos">96.5%</td><td>72%</td><td><span class="pill g">Top</span></td></tr>
+          <tr><td>3</td><td><strong>LB Nagar</strong></td><td>Hyderabad</td><td>Rs.8.2 Cr</td><td class="pos">1.5%</td><td class="pos">95.8%</td><td>68%</td><td><span class="pill g">Top</span></td></tr>
+          <tr><td>4</td><td><strong>Kukatpally</strong></td><td>Hyderabad</td><td>Rs.7.6 Cr</td><td class="pos">1.6%</td><td class="pos">95.1%</td><td>65%</td><td><span class="pill g">Top</span></td></tr>
+          <tr><td>5</td><td><strong>Madhapur</strong></td><td>Hyderabad</td><td>Rs.6.9 Cr</td><td class="pos">1.7%</td><td class="pos">94.8%</td><td>81%</td><td><span class="pill g">Top</span></td></tr>
+          <tr><td>...</td><td colspan="7" style="text-align:center;color:#8B9097;">— 240 branches —</td></tr>
+          <tr><td>246</td><td><strong>Nellore Rural</strong></td><td>AP</td><td>Rs.0.8 Cr</td><td class="neg">3.8%</td><td class="neg">87.2%</td><td>34%</td><td><span class="pill r">Critical</span></td></tr>
+          <tr><td>247</td><td><strong>Karimnagar East</strong></td><td>Telangana</td><td>Rs.0.7 Cr</td><td class="neg">4.1%</td><td class="neg">86.5%</td><td>28%</td><td><span class="pill r">Critical</span></td></tr>
+          <tr><td>248</td><td><strong>Coimbatore South</strong></td><td>TN</td><td>Rs.0.6 Cr</td><td class="neg">4.5%</td><td class="neg">85.1%</td><td>31%</td><td><span class="pill r">Critical</span></td></tr>
+          <tr><td>249</td><td><strong>Warangal Old City</strong></td><td>Telangana</td><td>Rs.0.5 Cr</td><td class="neg">4.9%</td><td class="neg">84.3%</td><td>22%</td><td><span class="pill r">Critical</span></td></tr>
+          <tr><td>250</td><td><strong>Khammam Rural</strong></td><td>Telangana</td><td>Rs.0.4 Cr</td><td class="neg">5.2%</td><td class="neg">82.7%</td><td>19%</td><td><span class="pill r">Critical</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ACT 2: Sales & Business Growth -->
+<section id="act2" class="panel">
+  <h2 class="h2">Act 2 — Sales & Business Growth Command Center</h2>
+  <p class="meta2">COO view | Daily pipeline | Product mix | Branch targets | AI lead scoring</p>
+
+  <div class="kpi-row">
+    <div class="kpi g"><div class="kpi-l">New Disbursals (MTD)</div><div class="kpi-v">Rs.186 Cr</div><div class="kpi-d">Target: Rs.200 Cr (93%)</div></div>
+    <div class="kpi b"><div class="kpi-l">Active Leads</div><div class="kpi-v">14,820</div><div class="kpi-d">+12% vs last month</div></div>
+    <div class="kpi a"><div class="kpi-l">Conversion Rate</div><div class="kpi-v">18.4%</div><div class="kpi-d">Target: 20% (slight gap)</div></div>
+    <div class="kpi p"><div class="kpi-l">Avg Approval Time</div><div class="kpi-v">4.2 days</div><div class="kpi-d">Target: &lt;5 days OK</div></div>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h3>Product-wise Pipeline & Conversion</h3>
+      <table>
+        <thead><tr><th>Product</th><th>Leads</th><th>Sanctioned</th><th>Disbursed</th><th>Conv %</th><th>Avg Ticket</th><th>Yield</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Home Loans</strong></td><td>3,240</td><td>Rs.68 Cr</td><td>Rs.52 Cr</td><td class="pos">19.2%</td><td>Rs.28L</td><td>8.5%</td></tr>
+          <tr><td><strong>Gold Loans</strong></td><td>4,680</td><td>Rs.42 Cr</td><td>Rs.38 Cr</td><td class="pos">22.4%</td><td>Rs.1.2L</td><td>12.2%</td></tr>
+          <tr><td><strong>MSME Loans</strong></td><td>2,150</td><td>Rs.28 Cr</td><td>Rs.22 Cr</td><td class="neg">16.8%</td><td>Rs.8L</td><td>11.8%</td></tr>
+          <tr><td><strong>Vehicle Loans</strong></td><td>2,890</td><td>Rs.18 Cr</td><td>Rs.14 Cr</td><td class="neg">15.2%</td><td>Rs.4.5L</td><td>10.5%</td></tr>
+          <tr><td><strong>Personal Loans</strong></td><td>1,860</td><td>Rs.12 Cr</td><td>Rs.9 Cr</td><td class="neg">14.6%</td><td>Rs.2.8L</td><td>14.5%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>AI Lead Scoring — Top Opportunities</h3>
+      <div class="ai-rec">
+        <h4>Lead #HL-28471 — Score: 94/100</h4>
+        <p>Mr. Ramesh Gupta, 42, IT Professional, Hyderabad. CIBIL 780. Salary Rs.1.8L/month. Existing FD customer (Rs.15L). Looking for home loan (Rs.45L). AI Confidence: 94%</p>
+        <p class="conf">Why: High CIBIL + existing relationship + stable employment + property identified</p>
+        <div class="action"><button class="btn-p" onclick="alert('Lead assigned to Begumpet branch manager. Auto-SMS sent to customer.')">Assign & Notify</button><button class="btn" onclick="alert('Override logged: Customer prefers different branch')">Override</button></div>
+      </div>
+      <div class="ai-rec">
+        <h4>Lead #GL-19234 — Score: 91/100</h4>
+        <p>Mrs. Lakshmi Devi, 55, Business Owner, Karimnagar. Gold collateral: 250g. Need: Rs.8L for working capital. Repeat customer (3 prior loans, all closed on time). AI Confidence: 91%</p>
+        <p class="conf">Why: Repeat customer + perfect repayment history + collateral value 3x loan amount</p>
+        <div class="action"><button class="btn-p" onclick="alert('Pre-approved offer generated. SMS sent with instant approval link.')">Pre-Approve</button><button class="btn" onclick="alert('Override logged: Requested higher amount')">Override</button></div>
+      </div>
+      <div class="ai-rec">
+        <h4>Lead #MS-8472 — Score: 72/100</h4>
+        <p>Mr. Arjun Nair, 38, Retail Shop Owner, Kochi. CIBIL 680. Need: Rs.5L for inventory. First-time borrower. AI Confidence: 72%</p>
+        <p class="conf">Why: Moderate CIBIL + new customer + seasonal business risk. Recommend: Co-applicant or collateral.</p>
+        <div class="action"><button class="btn-p" onclick="alert('Branch manager notified for manual review.')">Manual Review</button><button class="btn" onclick="alert('Override logged: Rejected due to insufficient documentation')">Reject</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Regional Sales Performance</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Region</th><th>Branches</th><th>Target</th><th>Achieved</th><th>Gap</th><th>NPA</th><th>Digital %</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Hyderabad Metro</strong></td><td>45</td><td>Rs.48 Cr</td><td>Rs.51.2 Cr</td><td class="pos">+6.7%</td><td class="pos">1.4%</td><td>74%</td><td><span class="pill g">On Track</span></td></tr>
+          <tr><td><strong>Telangana Rural</strong></td><td>38</td><td>Rs.32 Cr</td><td>Rs.30.8 Cr</td><td class="neg">-3.8%</td><td class="a">2.6%</td><td>42%</td><td><span class="pill a">Watch</span></td></tr>
+          <tr><td><strong>AP Coastal</strong></td><td>32</td><td>Rs.28 Cr</td><td>Rs.29.4 Cr</td><td class="pos">+5.0%</td><td class="pos">1.8%</td><td>51%</td><td><span class="pill g">On Track</span></td></tr>
+          <tr><td><strong>Tamil Nadu</strong></td><td>35</td><td>Rs.30 Cr</td><td>Rs.28.1 Cr</td><td class="neg">-6.3%</td><td class="neg">2.9%</td><td>48%</td><td><span class="pill a">Watch</span></td></tr>
+          <tr><td><strong>Maharashtra</strong></td><td>42</td><td>Rs.36 Cr</td><td>Rs.34.5 Cr</td><td class="neg">-4.2%</td><td class="a">2.3%</td><td>58%</td><td><span class="pill a">Watch</span></td></tr>
+          <tr><td><strong>Karnataka</strong></td><td>28</td><td>Rs.24 Cr</td><td>Rs.25.2 Cr</td><td class="pos">+5.0%</td><td class="pos">1.6%</td><td>62%</td><td><span class="pill g">On Track</span></td></tr>
+          <tr><td><strong>Kerala</strong></td><td>18</td><td>Rs.16 Cr</td><td>Rs.15.1 Cr</td><td class="neg">-5.6%</td><td class="neg">3.1%</td><td>55%</td><td><span class="pill r">Critical</span></td></tr>
+          <tr><td><strong>North India</strong></td><td>12</td><td>Rs.6 Cr</td><td>Rs.5.7 Cr</td><td class="neg">-5.0%</td><td class="a">2.4%</td><td>38%</td><td><span class="pill a">Watch</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ACT 3: Customer Journey Intelligence -->
+<section id="act3" class="panel">
+  <h2 class="h2">Act 3 — Customer Journey Intelligence</h2>
+  <p class="meta2">Customer Relationship Head view | End-to-end journey | Drop-off analysis | Cross-sell triggers</p>
+
+  <div class="kpi-row">
+    <div class="kpi g"><div class="kpi-l">Customer Base</div><div class="kpi-v">1.24M</div><div class="kpi-d">+8,400 new this month</div></div>
+    <div class="kpi b"><div class="kpi-l">CLV (Avg)</div><div class="kpi-v">Rs.4.2L</div><div class="kpi-d">+6% YoY</div></div>
+    <div class="kpi p"><div class="kpi-l">NPS Score</div><div class="kpi-v">68</div><div class="kpi-d">Target: 70 (near)</div></div>
+    <div class="kpi a"><div class="kpi-l">Cross-Sell Ratio</div><div class="kpi-v">1.8</div><div class="kpi-d">Target: 2.0 (gap)</div></div>
+  </div>
+
+  <div class="card">
+    <h3>Customer Journey Funnel — Drop-off Analysis</h3>
+    <div class="four">
+      <div class="metric"><div class="metric-v">24,600</div><div class="metric-l">Leads Generated</div><div style="font-size:0.7rem;color:#1E8449;margin-top:4px;">100% baseline</div></div>
+      <div class="metric"><div class="metric-v">18,420</div><div class="metric-l">Eligibility Check</div><div style="font-size:0.7rem;color:#1E8449;margin-top:4px;">74.9% retention</div></div>
+      <div class="metric"><div class="metric-v">14,736</div><div class="metric-l">Digital KYC</div><div style="font-size:0.7rem;color:#B45309;margin-top:4px;">80.0% retention</div></div>
+      <div class="metric"><div class="metric-v">11,050</div><div class="metric-l">Credit Assessment</div><div style="font-size:0.7rem;color:#B45309;margin-top:4px;">75.0% retention</div></div>
+    </div>
+    <div style="margin-top:14px;">
+      <div class="bar-chart">
+        <div class="bar-g"><div class="bar-l">Risk Score Generated</div><div class="bar-t"><div class="bar-f risk" style="width:90%"></div></div><div class="bar-v">9,945 (90%)</div></div>
+        <div class="bar-g"><div class="bar-l">Human Approved</div><div class="bar-t"><div class="bar-f human" style="width:72%"></div></div><div class="bar-v">7,160 (72%)</div></div>
+        <div class="bar-g"><div class="bar-l">Disbursed</div><div class="bar-t"><div class="bar-f disb" style="width:65%"></div></div><div class="bar-v">6,452 (65%)</div></div>
+        <div class="bar-g"><div class="bar-l">Repaying On Time</div><div class="bar-t"><div class="bar-f repay" style="width:94%"></div></div><div class="bar-v">6,065 (94%)</div></div>
+        <div class="bar-g"><div class="bar-l">Cross-Sold</div><div class="bar-t"><div class="bar-f cross" style="width:32%"></div></div><div class="bar-v">1,936 (32%)</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h3>Drop-off Hotspots — AI Root Cause</h3>
+      <div class="alert h">
+        <div class="alert-s">CRITICAL</div>
+        <div class="alert-b"><strong>KYC Drop-off: 19.2% abandon at document upload</strong><p>Mobile app upload fails on low-end Android devices. 3,200 leads lost this month. AI recommends: compress upload size + add offline mode.</p></div>
+        <button class="btn" onclick="alert('Product team ticket created: P1 bug fix for KYC upload')">Ticket Product</button>
+      </div>
+      <div class="alert m">
+        <div class="alert-s">MED</div>
+        <div class="alert-b"><strong>Credit Assessment: 25% rejected for thin-file customers</strong><p>First-time borrowers with no credit history auto-rejected. AI recommends: alternative data scoring (utility bills, rent payments, UPI history).</p></div>
+        <button class="btn" onclick="alert('Data science team notified for alternative scoring model')">Notify DS</button>
+      </div>
+      <div class="alert l">
+        <div class="alert-s">LOW</div>
+        <div class="alert-b"><strong>Cross-sell: Only 32% of closed-loan customers buy 2nd product</strong><p>Wealth advisory never offered to gold loan customers. AI recommends: auto-trigger wealth advisory offer 30 days post-closure.</p></div>
+        <button class="btn" onclick="alert('Wealth team campaign auto-scheduled')">Schedule Campaign</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Customer Segment Intelligence</h3>
+      <table>
+        <thead><tr><th>Segment</th><th>Count</th><th>Avg CLV</th><th>NPA %</th><th>Digital %</th><th>Next Best Action</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Affluent Savers</strong></td><td>84,000</td><td>Rs.12.5L</td><td class="pos">0.4%</td><td>89%</td><td><span class="pill b">Wealth Advisory</span></td></tr>
+          <tr><td><strong>Young Professionals</strong></td><td>312,000</td><td>Rs.3.8L</td><td class="pos">1.2%</td><td>78%</td><td><span class="pill b">Personal Loan</span></td></tr>
+          <tr><td><strong>MSME Owners</strong></td><td>186,000</td><td>Rs.6.2L</td><td class="a">2.8%</td><td>45%</td><td><span class="pill b">Working Capital</span></td></tr>
+          <tr><td><strong>Agricultural</strong></td><td>248,000</td><td>Rs.2.1L</td><td class="a">2.4%</td><td>28%</td><td><span class="pill b">Gold Loan</span></td></tr>
+          <tr><td><strong>First-Time Borrowers</strong></td><td>124,000</td><td>Rs.1.5L</td><td class="neg">4.2%</td><td>62%</td><td><span class="pill b">Credit Builder</span></td></tr>
+          <tr><td><strong>At-Risk</strong></td><td>86,000</td><td>Rs.0.8L</td><td class="neg">8.5%</td><td>34%</td><td><span class="pill r">Restructure</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ACT 4: Credit Risk & AI Decision Center -->
+<section id="act4" class="panel">
+  <h2 class="h2">Act 4 — Credit Risk & AI Decision Center</h2>
+  <p class="meta2">CRO view | Risk scoring | AI recommendations | Explainable decisions | Human override</p>
+
+  <div class="kpi-row">
+    <div class="kpi g"><div class="kpi-l">Portfolio NPA</div><div class="kpi-v">2.14%</div><div class="kpi-d">Industry: 3.2% (we are 0.9pp better)</div></div>
+    <div class="kpi a"><div class="kpi-l">Risk Exposure</div><div class="kpi-v">Rs.48 Cr</div><div class="kpi-d">High-risk accounts flagged</div></div>
+    <div class="kpi b"><div class="kpi-l">AI Approval Rate</div><div class="kpi-v">72%</div><div class="kpi-d">28% sent for human review</div></div>
+    <div class="kpi p"><div class="kpi-l">Override Rate</div><div class="kpi-v">4.8%</div><div class="kpi-d">All logged for model learning</div></div>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h3>AI Decision Engine — Live Cases for Human Review</h3>
+      <div class="ai-rec">
+        <h4>Case #CR-48291 — AI: REJECT | Confidence: 89%</h4>
+        <p><strong>Applicant:</strong> Mr. Suresh Nair, 34, Kochi. CIBIL: 620. Income: Rs.28K/month. Request: Rs.4L personal loan. 2 prior defaults (2019, 2021).</p>
+        <p class="conf"><strong>Why AI Rejected:</strong> CIBIL below threshold (650) + 2 historical defaults + debt-to-income ratio 58% (threshold: 45%). Risk score: 78/100 (High).</p>
+        <div class="action"><button class="btn-g" onclick="alert('Override approved: Branch manager vouched for applicant. New employment since 2022. Override logged for model learning.')">Approve Override</button><button class="btn" onclick="alert('Rejection confirmed. Feedback logged.')">Confirm Reject</button></div>
+      </div>
+      <div class="ai-rec">
+        <h4>Case #CR-48292 — AI: APPROVE | Confidence: 96%</h4>
+        <p><strong>Applicant:</strong> Mrs. Priya Sharma, 41, Hyderabad. CIBIL: 820. Income: Rs.1.2L/month. Request: Rs.15L home loan. Existing FD: Rs.8L. Property: Verified.</p>
+        <p class="conf"><strong>Why AI Approved:</strong> CIBIL excellent + stable employment (12 years) + collateral value 2.5x loan + existing relationship. Risk score: 12/100 (Very Low).</p>
+        <div class="action"><button class="btn-p" onclick="alert('Auto-approved. Sanction letter generated. Customer notified via SMS.')">Auto-Approve</button><button class="btn" onclick="alert('Sent to branch manager for manual verification.')">Manual Review</button></div>
+      </div>
+      <div class="ai-rec">
+        <h4>Case #CR-48293 — AI: CONDITIONAL | Confidence: 71%</h4>
+        <p><strong>Applicant:</strong> Mr. Rajesh Kumar, 29, Bangalore. CIBIL: 710. Income: Rs.45K/month. Request: Rs.6L vehicle loan. Self-employed (2 years). No prior loans.</p>
+        <p class="conf"><strong>Why AI Conditional:</strong> CIBIL good but thin file + self-employed < 3 years + no prior credit history. Recommend: Co-applicant + 20% down payment.</p>
+        <div class="action"><button class="btn-p" onclick="alert('Conditional offer generated: Co-applicant required + 20% down payment.')">Send Conditional</button><button class="btn" onclick="alert('Sent to underwriting manager for detailed review.')">Deep Review</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Risk Heatmap — Portfolio by Region & Product</h3>
+      <table>
+        <thead><tr><th>Region</th><th>Home Loan NPA</th><th>Gold Loan NPA</th><th>MSME NPA</th><th>Vehicle NPA</th><th>Personal NPA</th><th>Overall</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Hyderabad</strong></td><td class="pos">1.2%</td><td class="pos">0.8%</td><td class="pos">1.5%</td><td class="pos">1.1%</td><td class="pos">1.8%</td><td class="pos">1.3%</td></tr>
+          <tr><td><strong>Telangana Rural</strong></td><td class="a">2.4%</td><td class="pos">1.2%</td><td class="a">2.8%</td><td class="a">2.2%</td><td class="neg">3.5%</td><td class="a">2.4%</td></tr>
+          <tr><td><strong>AP Coastal</strong></td><td class="pos">1.5%</td><td class="pos">0.9%</td><td class="a">2.1%</td><td class="pos">1.4%</td><td class="a">2.6%</td><td class="a">1.7%</td></tr>
+          <tr><td><strong>Tamil Nadu</strong></td><td class="neg">3.8%</td><td class="pos">1.0%</td><td class="neg">3.5%</td><td class="a">2.4%</td><td class="neg">3.9%</td><td class="neg">2.9%</td></tr>
+          <tr><td><strong>Maharashtra</strong></td><td class="a">2.1%</td><td class="pos">1.1%</td><td class="a">2.5%</td><td class="a">2.0%</td><td class="a">2.7%</td><td class="a">2.1%</td></tr>
+          <tr><td><strong>Karnataka</strong></td><td class="pos">1.4%</td><td class="pos">0.7%</td><td class="pos">1.8%</td><td class="pos">1.3%</td><td class="a">2.2%</td><td class="pos">1.5%</td></tr>
+          <tr><td><strong>Kerala</strong></td><td class="neg">4.2%</td><td class="pos">1.3%</td><td class="neg">4.1%</td><td class="neg">3.2%</td><td class="neg">4.5%</td><td class="neg">3.5%</td></tr>
+          <tr><td><strong>North India</strong></td><td class="a">2.3%</td><td class="pos">1.4%</td><td class="a">2.9%</td><td class="a">2.5%</td><td class="a">3.1%</td><td class="a">2.4%</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:12px;padding:10px;background:rgba(192,57,43,0.06);border-radius:8px;font-size:0.8rem;color:#C0392B;">
+        <strong>AI Alert:</strong> Kerala and Tamil Nadu showing systemic stress. Recommend: tighten MSME underwriting in these regions, increase collateral requirements, and activate early warning monitoring.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Explainable AI — Model Performance & Bias Audit</h3>
+    <div class="three">
+      <div class="metric"><div class="metric-v">94.2%</div><div class="metric-l">Model Accuracy</div><div style="font-size:0.7rem;color:#8B9097;margin-top:4px;">On validation set</div></div>
+      <div class="metric"><div class="metric-v">2.8%</div><div class="metric-l">False Positive Rate</div><div style="font-size:0.7rem;color:#8B9097;margin-top:4px;">Good applicants rejected</div></div>
+      <div class="metric"><div class="metric-v">3.1%</div><div class="metric-l">False Negative Rate</div><div style="font-size:0.7rem;color:#8B9097;margin-top:4px;">Bad applicants approved</div></div>
+      <div class="metric"><div class="metric-v">0.02</div><div class="metric-l">Demographic Parity</div><div style="font-size:0.7rem;color:#8B9097;margin-top:4px;">Gender bias score</div></div>
+      <div class="metric"><div class="metric-v">0.03</div><div class="metric-l">Equal Opportunity</div><div style="font-size:0.7rem;color:#8B9097;margin-top:4px;">Region bias score</div></div>
+      <div class="metric"><div class="metric-v">100%</div><div class="metric-l">Audit Trail</div><div style="font-size:0.7rem;color:#8B9097;margin-top:4px;">All decisions logged</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ACT 5: Collections & Recovery -->
+<section id="act5" class="panel">
+  <h2 class="h2">Act 5 — Collections & Recovery Operations</h2>
+  <p class="meta2">Collections Manager view | Bucket analysis | Recovery strategy | Field agent tracking</p>
+
+  <div class="kpi-row">
+    <div class="kpi g"><div class="kpi-l">Collection Efficiency</div><div class="kpi-v">94.6%</div><div class="kpi-d">Target: >93% OK</div></div>
+    <div class="kpi a"><div class="kpi-l">Overdue > 90 Days</div><div class="kpi-v">Rs.48 Cr</div><div class="kpi-d">142 accounts flagged</div></div>
+    <div class="kpi b"><div class="kpi-l">Recovery Rate</div><div class="kpi-v">78.2%</div><div class="kpi-d">+4.2% vs last quarter</div></div>
+    <div class="kpi r"><div class="kpi-l">Write-offs (YTD)</div><div class="kpi-v">Rs.12.4 Cr</div><div class="kpi-d">0.51% of portfolio</div></div>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h3>Collections Bucket — Aging Analysis</h3>
+      <table>
+        <thead><tr><th>Bucket</th><th>Accounts</th><th>Amount</th><th>% of Portfolio</th><th>Strategy</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><strong>1-30 Days</strong></td><td>2,840</td><td>Rs.28 Cr</td><td>1.16%</td><td>SMS + Auto-call</td><td><span class="pill g">Automated</span></td></tr>
+          <tr><td><strong>31-60 Days</strong></td><td>1,420</td><td>Rs.18 Cr</td><td>0.74%</td><td>Agent call + email</td><td><span class="pill a">Active</span></td></tr>
+          <tr><td><strong>61-90 Days</strong></td><td>680</td><td>Rs.12 Cr</td><td>0.50%</td><td>Field visit + legal notice</td><td><span class="pill a">Active</span></td></tr>
+          <tr><td><strong>91-180 Days</strong></td><td>320</td><td>Rs.18 Cr</td><td>0.74%</td><td>Legal + settlement offer</td><td><span class="pill r">Escalated</span></td></tr>
+          <tr><td><strong>180+ Days</strong></td><td>142</td><td>Rs.30 Cr</td><td>1.24%</td><td>NPA + recovery tribunal</td><td><span class="pill r">NPA</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>AI Recovery Recommendations</h3>
+      <div class="ai-rec">
+        <h4>Account #AC-29841 — Recovery Probability: 82%</h4>
+        <p><strong>Mr. Arjun Reddy, Rs.4.2L overdue (67 days).</strong> Gold loan. Collateral: 180g gold. Customer has 3 prior loans, all closed. Missed payment due to hospitalization.</p>
+        <p class="conf"><strong>AI Recommendation:</strong> Offer 1-time settlement at 90% principal. Customer has high repayment intent + collateral covers 2.5x. Expected recovery: Rs.3.78L. Confidence: 82%</p>
+        <div class="action"><button class="btn-p" onclick="alert('Settlement offer generated: Rs.3.78L. SMS sent to customer with payment link.')">Send Offer</button><button class="btn" onclick="alert('Override: Proceed with legal notice instead.')">Override</button></div>
+      </div>
+      <div class="ai-rec">
+        <h4>Account #AC-29842 — Recovery Probability: 34%</h4>
+        <p><strong>Mr. Vikram Nair, Rs.8.5L overdue (124 days).</strong> MSME loan. Business closed. No collateral. 2nd default.</p>
+        <p class="conf"><strong>AI Recommendation:</strong> Initiate SARFAESI proceedings. Recovery probability low via settlement. Legal route optimal. Expected recovery: Rs.2.1L (25%). Confidence: 34%</p>
+        <div class="action"><button class="btn-p" onclick="alert('Legal notice generated. Sent to recovery tribunal.')">Initiate Legal</button><button class="btn" onclick="alert('Override: One final settlement attempt at 30% before legal.')">Final Attempt</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Field Agent Performance — Collections Team</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Agent</th><th>Branch</th><th>Cases</th><th>Visited</th><th>Recovered</th><th>Recovery %</th><th>Customer Rating</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Rajesh Kumar</strong></td><td>Begumpet</td><td>42</td><td>38</td><td>Rs.8.4L</td><td class="pos">82%</td><td>4.6/5</td><td><span class="pill g">Top</span></td></tr>
+          <tr><td><strong>Priya Sharma</strong></td><td>Ameerpet</td><td>38</td><td>35</td><td>Rs.7.2L</td><td class="pos">78%</td><td>4.4/5</td><td><span class="pill g">Top</span></td></tr>
+          <tr><td><strong>Vikram Reddy</strong></td><td>LB Nagar</td><td>34</td><td>28</td><td>Rs.5.1L</td><td class="a">62%</td><td>3.8/5</td><td><span class="pill a">Watch</span></td></tr>
+          <tr><td><strong>Anita Gupta</strong></td><td>Kukatpally</td><td>30</td><td>22</td><td>Rs.3.8L</td><td class="neg">48%</td><td>3.2/5</td><td><span class="pill r">Review</span></td></tr>
+          <tr><td><strong>Suresh Nair</strong></td><td>Madhapur</td><td>28</td><td>26</td><td>Rs.4.6L</td><td class="a">58%</td><td>4.1/5</td><td><span class="pill a">Watch</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ACT 6: Portfolio Health & Profitability -->
+<section id="act6" class="panel">
+  <h2 class="h2">Act 6 — Portfolio Health & Profitability</h2>
+  <p class="meta2">CFO view | P&L waterfall | Yield analysis | Cost ratios | Branch profitability</p>
+
+  <div class="kpi-row">
+    <div class="kpi g"><div class="kpi-l">Portfolio Yield</div><div class="kpi-v">11.8%</div><div class="kpi-d">Weighted avg across products</div></div>
+    <div class="kpi b"><div class="kpi-l">Operating Cost Ratio</div><div class="kpi-v">2.4%</div><div class="kpi-d">Target: &lt;2.8% OK</div></div>
+    <div class="kpi a"><div class="kpi-l">Cost of Funds</div><div class="kpi-v">6.2%</div><div class="kpi-d">+0.3% vs last quarter</div></div>
+    <div class="kpi p"><div class="kpi-l">Net Interest Margin</div><div class="kpi-v">5.6%</div><div class="kpi-d">Industry avg: 4.8%</div></div>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h3>P&L Waterfall — Q2 FY2026</h3>
+      <div class="wf">
+        <div class="wf-r"><span>Interest Income</span><span class="wf-vp">+Rs.142 Cr</span></div>
+        <div class="wf-b" style="height:140px;background:#27AE60;border-radius:3px;"></div>
+        <div class="wf-r"><span>Fee Income</span><span class="wf-vp">+Rs.28 Cr</span></div>
+        <div class="wf-b" style="height:28px;background:#27AE60;border-radius:3px;"></div>
+        <div class="wf-r"><span>Other Income</span><span class="wf-vp">+Rs.8 Cr</span></div>
+        <div class="wf-b" style="height:8px;background:#27AE60;border-radius:3px;"></div>
+        <div class="wf-r"><span>Total Income</span><span class="wf-vn2">Rs.178 Cr</span></div>
+        <div class="wf-b" style="height:18px;background:#1E3A5F;border-radius:3px;"></div>
+        <div class="wf-r"><span>Interest Expense</span><span class="wf-vn">-Rs.88 Cr</span></div>
+        <div class="wf-b" style="height:88px;background:#C0392B;border-radius:3px;"></div>
+        <div class="wf-r"><span>Operating Expenses</span><span class="wf-vn">-Rs.42 Cr</span></div>
+        <div class="wf-b" style="height:42px;background:#C0392B;border-radius:3px;"></div>
+        <div class="wf-r"><span>Provisions (NPA)</span><span class="wf-vn">-Rs.18 Cr</span></div>
+        <div class="wf-b" style="height:18px;background:#C0392B;border-radius:3px;"></div>
+        <div class="wf-r"><span>Tax</span><span class="wf-vn">-Rs.12 Cr</span></div>
+        <div class="wf-b" style="height:12px;background:#C0392B;border-radius:3px;"></div>
+        <div class="wf-r t"><span>Net Profit</span><span class="wf-vn2">Rs.18 Cr</span></div>
+        <div class="wf-b" style="height:18px;background:linear-gradient(90deg,#D4AC0D,#B7950B);border-radius:3px;"></div>
+      </div>
+      <div style="margin-top:10px;padding:10px;background:rgba(39,174,96,0.08);border-radius:8px;font-size:0.8rem;color:#1E8449;">
+        <strong>ROA: 1.0%</strong> | <strong>ROE: 14.2%</strong> | Both above industry benchmarks
+      </div>
+    </div>
+    <div class="card">
+      <h3>Product-wise Profitability</h3>
+      <table>
+        <thead><tr><th>Product</th><th>Portfolio</th><th>Yield</th><th>Cost</th><th>NIM</th><th>Provisions</th><th>Net Margin</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Gold Loans</strong></td><td>Rs.580 Cr</td><td>12.2%</td><td>5.8%</td><td class="pos">6.4%</td><td>0.4%</td><td class="pos">5.2%</td></tr>
+          <tr><td><strong>Personal Loans</strong></td><td>Rs.195 Cr</td><td>14.5%</td><td>6.5%</td><td class="pos">8.0%</td><td>1.8%</td><td class="pos">4.8%</td></tr>
+          <tr><td><strong>MSME Loans</strong></td><td>Rs.435 Cr</td><td>11.8%</td><td>6.0%</td><td class="pos">5.8%</td><td>1.2%</td><td class="pos">3.8%</td></tr>
+          <tr><td><strong>Vehicle Loans</strong></td><td>Rs.290 Cr</td><td>10.5%</td><td>6.2%</td><td class="pos">4.3%</td><td>0.9%</td><td class="pos">2.9%</td></tr>
+          <tr><td><strong>Home Loans</strong></td><td>Rs.918 Cr</td><td>8.5%</td><td>6.4%</td><td class="a">2.1%</td><td>0.6%</td><td class="a">1.2%</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:10px;padding:10px;background:rgba(212,172,13,0.08);border-radius:8px;font-size:0.8rem;color:#92610A;">
+        <strong>AI Insight:</strong> Home loans have lowest NIM (2.1%) but highest volume. Cross-sell insurance and wealth products to improve per-customer profitability.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Branch Profitability Ranking</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Rank</th><th>Branch</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Margin</th><th>Per-Employee</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><strong>Begumpet HQ</strong></td><td>Rs.14.2 Cr</td><td>Rs.8.1 Cr</td><td>Rs.6.1 Cr</td><td class="pos">42.9%</td><td>Rs.15.2L</td><td><span class="pill g">Star</span></td></tr>
+          <tr><td>2</td><td><strong>Ameerpet</strong></td><td>Rs.11.8 Cr</td><td>Rs.6.9 Cr</td><td>Rs.4.9 Cr</td><td class="pos">41.5%</td><td>Rs.14.8L</td><td><span class="pill g">Star</span></td></tr>
+          <tr><td>3</td><td><strong>Madhapur</strong></td><td>Rs.9.4 Cr</td><td>Rs.5.6 Cr</td><td>Rs.3.8 Cr</td><td class="pos">40.4%</td><td>Rs.16.1L</td><td><span class="pill g">Star</span></td></tr>
+          <tr><td>4</td><td><strong>LB Nagar</strong></td><td>Rs.8.2 Cr</td><td>Rs.5.1 Cr</td><td>Rs.3.1 Cr</td><td class="pos">37.8%</td><td>Rs.12.4L</td><td><span class="pill g">Top</span></td></tr>
+          <tr><td>5</td><td><strong>Kukatpally</strong></td><td>Rs.7.6 Cr</td><td>Rs.4.8 Cr</td><td>Rs.2.8 Cr</td><td class="pos">36.8%</td><td>Rs.11.8L</td><td><span class="pill g">Top</span></td></tr>
+          <tr><td colspan="8" style="text-align:center;color:#A8ACB2;">— 240 branches —</td></tr>
+          <tr><td>246</td><td><strong>Nellore Rural</strong></td><td>Rs.0.9 Cr</td><td>Rs.0.8 Cr</td><td>Rs.0.1 Cr</td><td class="neg">11.1%</td><td>Rs.2.8L</td><td><span class="pill r">Review</span></td></tr>
+          <tr><td>247</td><td><strong>Karimnagar East</strong></td><td>Rs.0.8 Cr</td><td>Rs.0.7 Cr</td><td>Rs.0.1 Cr</td><td class="neg">12.5%</td><td>Rs.3.1L</td><td><span class="pill r">Review</span></td></tr>
+          <tr><td>248</td><td><strong>Coimbatore South</strong></td><td>Rs.0.7 Cr</td><td>Rs.0.7 Cr</td><td>Rs.0.0 Cr</td><td class="neg">0.0%</td><td>Rs.1.8L</td><td><span class="pill r">Loss</span></td></tr>
+          <tr><td>249</td><td><strong>Warangal Old City</strong></td><td>Rs.0.6 Cr</td><td>Rs.0.7 Cr</td><td class="neg">-Rs.0.1 Cr</td><td class="neg">-16.7%</td><td>Rs.1.5L</td><td><span class="pill r">Loss</span></td></tr>
+          <tr><td>250</td><td><strong>Khammam Rural</strong></td><td>Rs.0.5 Cr</td><td>Rs.0.6 Cr</td><td class="neg">-Rs.0.1 Cr</td><td class="neg">-20.0%</td><td>Rs.1.2L</td><td><span class="pill r">Loss</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ACT 7: Compliance & Regulatory -->
+<section id="act7" class="panel">
+  <h2 class="h2">Act 7 — Compliance & Regulatory Control Tower</h2>
+  <p class="meta2">CCO view | RBI norms | KYC/AML | Audit trail | Regulatory reporting</p>
+
+  <div class="kpi-row">
+    <div class="kpi g"><div class="kpi-l">RBI Compliance</div><div class="kpi-v">98.2%</div><div class="kpi-d">3 minor observations</div></div>
+    <div class="kpi a"><div class="kpi-l">KYC Pending</div><div class="kpi-v">4,820</div><div class="kpi-d">2.1% of customer base</div></div>
+    <div class="kpi b"><div class="kpi-l">AML Alerts</div><div class="kpi-v">142</div><div class="kpi-d">12 escalated to FIUs</div></div>
+    <div class="kpi p"><div class="kpi-l">Audit Findings</div><div class="kpi-v">28</div><div class="kpi-d">18 closed, 10 open</div></div>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h3>Regulatory Compliance Dashboard</h3>
+      <div class="four">
+        <div class="metric"><div class="metric-v">100%</div><div class="metric-l">RBI Registration</div><div style="font-size:0.7rem;color:#1E8449;margin-top:4px;">All licenses valid</div></div>
+        <div class="metric"><div class="metric-v">97.9%</div><div class="metric-l">KYC Compliant</div><div style="font-size:0.7rem;color:#B45309;margin-top:4px;">4,820 pending update</div></div>
+        <div class="metric"><div class="metric-v">99.4%</div><div class="metric-l">Fair Practice</div><div style="font-size:0.7rem;color:#1E8449;margin-top:4px;">No major violations</div></div>
+        <div class="metric"><div class="metric-v">100%</div><div class="metric-l">Data Privacy</div><div style="font-size:0.7rem;color:#1E8449;margin-top:4px;">DPDP Act compliant</div></div>
+        <div class="metric"><div class="metric-v">96.8%</div><div class="metric-l">Grievance TAT</div><div style="font-size:0.7rem;color:#B45309;margin-top:4px;">Target: 98%</div></div>
+        <div class="metric"><div class="metric-v">100%</div><div class="metric-l">Interest Rate Caps</div><div style="font-size:0.7rem;color:#1E8449;margin-top:4px;">All products within RBI</div></div>
+        <div class="metric"><div class="metric-v">94.2%</div><div class="metric-l">Training Completion</div><div style="font-size:0.7rem;color:#B45309;margin-top:4px;">232 employees pending</div></div>
+        <div class="metric"><div class="metric-v">100%</div><div class="metric-l">Audit Trail</div><div style="font-size:0.7rem;color:#1E8449;margin-top:4px;">All decisions logged</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Open Audit Findings — Action Required</h3>
+      <div class="alert h">
+        <div class="alert-s">HIGH</div>
+        <div class="alert-b"><strong>Internal Audit: Branch cash reconciliation gap</strong><p>3 branches (Nellore, Karimnagar East, Khammam Rural) show cash reconciliation discrepancies &gt; Rs.50K. Potential process failure or fraud. Immediate physical audit required.</p></div>
+        <button class="btn" onclick="alert('Special audit team dispatched to 3 branches.')">Dispatch Audit</button>
+      </div>
+      <div class="alert m">
+        <div class="alert-s">MED</div>
+        <div class="alert-b"><strong>RBI Observation: NPA classification delay</strong><p>28 accounts classified as standard despite being overdue &gt;90 days. Delayed NPA recognition inflates portfolio quality. Corrective action: auto-classification trigger.</p></div>
+        <button class="btn" onclick="alert('IT team ticket created: Auto-NPA classification rule.')">Ticket IT</button>
+      </div>
+      <div class="alert l">
+        <div class="alert-s">LOW</div>
+        <div class="alert-b"><strong>AML: 12 high-value transactions flagged</strong><p>12 transactions &gt; Rs.10L without clear economic purpose. FIU report filed. Awaiting response.</p></div>
+        <button class="btn" onclick="alert('FIU report status checked: 8 cleared, 4 under review.')">Check Status</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Grievance Resolution Tracker</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Category</th><th>Received</th><th>Resolved</th><th>Pending</th><th>Avg TAT</th><th>Target TAT</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Interest Rate Dispute</strong></td><td>142</td><td>128</td><td>14</td><td>4.2 days</td><td>5 days</td><td><span class="pill g">OK</span></td></tr>
+          <tr><td><strong>Collection Harassment</strong></td><td>86</td><td>78</td><td>8</td><td>3.8 days</td><td>3 days</td><td><span class="pill a">Slight</span></td></tr>
+          <tr><td><strong>Loan Closure Delay</strong></td><td>64</td><td>52</td><td>12</td><td>6.5 days</td><td>5 days</td><td><span class="pill a">Over</span></td></tr>
+          <tr><td><strong>Documentation Error</strong></td><td>48</td><td>44</td><td>4</td><td>2.1 days</td><td>3 days</td><td><span class="pill g">OK</span></td></tr>
+          <tr><td><strong>Insurance Claim</strong></td><td>32</td><td>24</td><td>8</td><td>8.2 days</td><td>7 days</td><td><span class="pill a">Over</span></td></tr>
+          <tr><td><strong>Data Privacy</strong></td><td>18</td><td>16</td><td>2</td><td>1.8 days</td><td>2 days</td><td><span class="pill g">OK</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ACT 8: AI Strategy & Executive Decision Room -->
+<section id="act8" class="panel">
+  <h2 class="h2">Act 8 — AI Strategy & Executive Decision Room</h2>
+  <p class="meta2">Executive view | Strategic scenarios | AI recommendations | Board-ready insights</p>
+
+  <div class="kpi-row">
+    <div class="kpi g"><div class="kpi-l">AI Model Uptime</div><div class="kpi-v">99.97%</div><div class="kpi-d">SLA: 99.9%</div></div>
+    <div class="kpi b"><div class="kpi-l">Decisions Automated</div><div class="kpi-v">72%</div><div class="kpi-d">28% human-reviewed</div></div>
+    <div class="kpi p"><div class="kpi-l">Model Retraining</div><div class="kpi-v">Weekly</div><div class="kpi-d">Last: 11 July 2026</div></div>
+    <div class="kpi a"><div class="kpi-l">Data Drift Alert</div><div class="kpi-v">2</div><div class="kpi-d">Features flagged for review</div></div>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h3>Strategic Scenario — What If Analysis</h3>
+      <div class="ai-rec">
+        <h4>Scenario A: RBI Rate Cut by 50bps</h4>
+        <p><strong>Impact on Portfolio:</strong> Cost of funds drops by 0.4%. Net interest margin expands by 35bps. Annual profit uplift: Rs.8.4 Cr.</p>
+        <p class="conf"><strong>AI Recommendation:</strong> Pre-position fixed-rate liabilities before rate cut. Lock in 18-month MCLR contracts now. Activate aggressive disbursal in Q3 to capture margin expansion.</p>
+        <div class="action"><button class="btn-p" onclick="alert('CFO notified. Treasury team to execute liability hedging strategy.')">Notify CFO</button><button class="btn" onclick="alert('Scenario saved for board presentation.')">Save for Board</button></div>
+      </div>
+      <div class="ai-rec">
+        <h4>Scenario B: MSME NPA Rises to 5%</h4>
+        <p><strong>Impact on Portfolio:</strong> Provisions increase by Rs.12 Cr. Net profit drops by 18%. Capital adequacy remains above minimum but buffer thins.</p>
+        <p class="conf"><strong>AI Recommendation:</strong> Immediate tightening: increase MSME collateral from 120% to 150%, reduce ticket size from Rs.10L to Rs.7L, activate weekly monitoring for existing MSME book.</p>
+        <div class="action"><button class="btn-p" onclick="alert('CRO notified. Risk committee meeting scheduled for tomorrow 9 AM.')">Alert CRO</button><button class="btn" onclick="alert('Stress test report generated for board.')">Generate Report</button></div>
+      </div>
+      <div class="ai-rec">
+        <h4>Scenario C: Digital-Only Branch Model</h4>
+        <p><strong>Impact:</strong> Close 50 lowest-performing rural branches. Convert to digital kiosks. Cost savings: Rs.18 Cr annually. Customer impact: 12% of rural customers may churn.</p>
+        <p class="conf"><strong>AI Recommendation:</strong> Pilot in 10 branches first. Measure churn vs. cost savings. If pilot succeeds, scale to 50 over 18 months. Maintain physical presence in districts with &gt;5,000 customers.</p>
+        <div class="action"><button class="btn-p" onclick="alert('COO notified. Pilot program design initiated.')">Design Pilot</button><button class="btn" onclick="alert('Customer impact study commissioned.')">Study Impact</button></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>AI Model Performance — Executive Summary</h3>
+      <div class="three">
+        <div class="metric"><div class="metric-v">94.2%</div><div class="metric-l">Credit Risk Model</div><div style="font-size:0.7rem;color:#8B9097;margin-top:4px;">AUC-ROC</div></div>
+        <div class="metric"><div class="metric-v">91.8%</div><div class="metric-l">Collections Model</div><div style="font-size:0.7rem;color:#8B9097;margin-top:4px;">Recovery prediction</div></div>
+        <div class="metric"><div class="metric-v">88.4%</div><div class="metric-l">Fraud Detection</div><div style="font-size:0.7rem;color:#8B9097;margin-top:4px;">Precision</div></div>
+        <div class="metric"><div class="metric-v">86.2%</div><div class="metric-l">Cross-sell Model</div><div style="font-size:0.7rem;color:#8B9097;margin-top:4px;">Conversion lift</div></div>
+        <div class="metric"><div class="metric-v">92.6%</div><div class="metric-l">Churn Prediction</div><div style="font-size:0.7rem;color:#8B9097;margin-top:4px;">Recall</div></div>
+        <div class="metric"><div class="metric-v">89.1%</div><div class="metric-l">Lead Scoring</div><div style="font-size:0.7rem;color:#8B9097;margin-top:4px;">Top-decile lift</div></div>
+      </div>
+      <div style="margin-top:14px;padding:12px;background:rgba(212,172,13,0.08);border-radius:8px;font-size:0.8rem;color:#92610A;">
+        <strong>Data Drift Alert:</strong> Two features showing drift: "IT sector employment %" (Chennai branches) and "agricultural rainfall index" (AP/Telangana). Models retraining scheduled for 18 July. Recommend: manual review of Chennai home loan approvals until retraining complete.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Executive Decision Log — AI Recommendations vs. Human Overrides</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Decision</th><th>AI Rec</th><th>Human Action</th><th>Override?</th><th>Outcome</th><th>Learning</th></tr></thead>
+        <tbody>
+          <tr><td>10-Jul</td><td>MSME loan #MS-4821</td><td>Approve (91%)</td><td>Approved</td><td>No</td><td>On track</td><td>Model validated</td></tr>
+          <tr><td>09-Jul</td><td>Home loan #HL-19234</td><td>Reject (78%)</td><td>Approved</td><td class="neg">Yes</td><td>On track</td><td>Branch manager vouched</td></tr>
+          <tr><td>08-Jul</td><td>Gold loan #GL-8472</td><td>Approve (96%)</td><td>Approved</td><td>No</td><td>On track</td><td>Model validated</td></tr>
+          <tr><td>07-Jul</td><td>Personal loan #PL-5621</td><td>Conditional (68%)</td><td>Rejected</td><td class="neg">Yes</td><td>N/A</td><td>Conservative stance</td></tr>
+          <tr><td>06-Jul</td><td>Vehicle loan #VL-3412</td><td>Approve (88%)</td><td>Approved</td><td>No</td><td>On track</td><td>Model validated</td></tr>
+          <tr><td>05-Jul</td><td>MSME loan #MS-3912</td><td>Reject (82%)</td><td>Rejected</td><td>No</td><td>N/A</td><td>Model validated</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:10px;padding:10px;background:rgba(39,174,96,0.08);border-radius:8px;font-size:0.8rem;color:#1E8449;">
+      <strong>Override Analysis:</strong> 4.8% override rate. 78% of overrides were correct (outcome validated). 22% of overrides led to early delinquency. AI model learning from override data. Next retraining: 18 July 2026.
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <p><strong>Project Kubera</strong> — Financial Operations & Decision Intelligence Platform | Rs.18,000 Cr AUM | Rs.2,400 Cr Loan Portfolio | 250 Branches | 4,000 Employees | 1.2M Customers</p>
+  <p style="font-size:0.7rem;margin-top:5px;">Built by Guptha Ashish Goud | Inspired by executive-first thinking, explainable AI, and human-in-the-loop decision making | Self-contained HTML — no server needed</p>
+</footer>
+</div>
+
+<script>
+function switchTab(tabId) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  document.querySelector('[data-tab="' + tabId + '"]').classList.add('active');
+}
+</script>
+</body>
+</html>

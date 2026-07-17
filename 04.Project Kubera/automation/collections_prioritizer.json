@@ -1,0 +1,136 @@
+{
+  "$schema": "https://n8n.io/schemas/workflow.json",
+  "name": "Project Kubera — AI Collections Prioritizer",
+  "description": "Daily at 8AM, runs AI recovery model on all overdue accounts and generates prioritized visit list for each collections agent.",
+  "version": 1,
+  "tags": ["finance", "collections", "ai", "field-ops"],
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none"
+  },
+  "nodes": [
+    {
+      "id": "trigger-daily",
+      "name": "Daily 8AM Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "query-overdue",
+      "name": "Query Overdue Accounts",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [200, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT l.loan_id, c.customer_name, c.contact_phone, l.disbursed_amount, l.disbursement_date, CURRENT_DATE - l.disbursement_date + l.tenure_months * 30 AS days_overdue, p.product_name FROM fact_loans l JOIN dim_customer c ON l.customer_id = c.customer_id JOIN dim_product p ON l.product_id = p.product_id WHERE l.status IN ('Disbursed', 'NPA') AND CURRENT_DATE > l.disbursement_date + INTERVAL '1 month' * l.tenure_months;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "postgres-kubera",
+          "name": "Kubera DB"
+        }
+      }
+    },
+    {
+      "id": "call-ml-model",
+      "name": "Call Recovery Prediction API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [400, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "https://ml.kuberafinance.com/v1/predict/recovery",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "loan_id": "={{ $json.loan_id }}",
+          "days_overdue": "={{ $json.days_overdue }}",
+          "product_type": "={{ $json.product_name }}",
+          "disbursed_amount": "={{ $json.disbursed_amount }}"
+        }
+      }
+    },
+    {
+      "id": "prioritize-queue",
+      "name": "Sort by Recovery Probability",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [600, 0],
+      "parameters": {
+        "functionCode": "// Sort items by recovery probability descending
+const items = items[0].json;
+items.sort((a, b) => b.recovery_prob - a.recovery_prob);
+return [items];"
+      }
+    },
+    {
+      "id": "assign-to-agent",
+      "name": "Assign to Collections Agent",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [800, 0],
+      "parameters": {
+        "operation": "insert",
+        "table": "fact_collections",
+        "columns": {
+          "mapping": [
+            { "column": "loan_id", "value": "={{ $json.loan_id }}" },
+            { "column": "agent_id", "value": "={{ $json.assigned_agent_id }}" },
+            { "column": "bucket", "value": "={{ $json.bucket }}" },
+            { "column": "overdue_amount", "value": "={{ $json.overdue_amount }}" },
+            { "column": "days_overdue", "value": "={{ $json.days_overdue }}" },
+            { "column": "ai_recovery_prob", "value": "={{ $json.recovery_prob }}" },
+            { "column": "ai_recommendation", "value": "={{ $json.recommendation }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "notify-agents",
+      "name": "Send Daily Priority List to Agents",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1000, 0],
+      "parameters": {
+        "fromEmail": "collections@kuberafinance.com",
+        "toEmail": "={{ $json.agent_email }}",
+        "subject": "Daily Collections Priority List — {{ $today }}",
+        "text": "Your prioritized visit list for today (sorted by AI recovery probability):\n\n{{ $json.priority_list }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Daily 8AM Trigger": {
+      "main": [[{ "node": "Query Overdue Accounts", "type": "main", "index": 0 }]]
+    },
+    "Query Overdue Accounts": {
+      "main": [[{ "node": "Call Recovery Prediction API", "type": "main", "index": 0 }]]
+    },
+    "Call Recovery Prediction API": {
+      "main": [[{ "node": "Sort by Recovery Probability", "type": "main", "index": 0 }]]
+    },
+    "Sort by Recovery Probability": {
+      "main": [[{ "node": "Assign to Collections Agent", "type": "main", "index": 0 }]]
+    },
+    "Assign to Collections Agent": {
+      "main": [[{ "node": "Send Daily Priority List to Agents", "type": "main", "index": 0 }]]
+    }
+  }
+}

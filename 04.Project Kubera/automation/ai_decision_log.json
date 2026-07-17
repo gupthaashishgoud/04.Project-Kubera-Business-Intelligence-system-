@@ -1,0 +1,156 @@
+{
+  "$schema": "https://n8n.io/schemas/workflow.json",
+  "name": "Project Kubera — AI Decision Audit Trail",
+  "description": "Logs every AI decision and human override for model retraining, regulatory audit, and explainability compliance.",
+  "version": 1,
+  "tags": ["nbfc", "ai", "audit", "compliance"],
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none"
+  },
+  "nodes": [
+    {
+      "id": "trigger-webhook",
+      "name": "AI Decision Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-decision-log",
+        "responseMode": "responseNode"
+      }
+    },
+    {
+      "id": "validate-payload",
+      "name": "Validate Payload",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [200, 0],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "validated",
+              "value": "={{ $json.loan_id && $json.ai_recommendation && $json.confidence_pct }}",
+              "type": "boolean"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "log-to-db",
+      "name": "Log to fact_ai_decisions",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [400, 0],
+      "parameters": {
+        "operation": "insert",
+        "table": "fact_ai_decisions",
+        "columns": {
+          "mapping": [
+            { "column": "loan_id", "value": "={{ $json.loan_id }}" },
+            { "column": "customer_id", "value": "={{ $json.customer_id }}" },
+            { "column": "ai_recommendation", "value": "={{ $json.ai_recommendation }}" },
+            { "column": "confidence_pct", "value": "={{ $json.confidence_pct }}" },
+            { "column": "risk_score", "value": "={{ $json.risk_score }}" },
+            { "column": "override_flag", "value": "={{ $json.override_flag || false }}" },
+            { "column": "override_reason", "value": "={{ $json.override_reason }}" },
+            { "column": "final_decision", "value": "={{ $json.final_decision }}" },
+            { "column": "decision_date", "value": "={{ $today }}" }
+          ]
+        }
+      },
+      "credentials": {
+        "postgres": { "id": "postgres-kubera", "name": "Kubera DB" }
+      }
+    },
+    {
+      "id": "check-override",
+      "name": "Override Triggered?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [600, 0],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "={{ $json.override_flag }}",
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "id": "notify-cro",
+      "name": "Notify CRO of Override",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [800, -100],
+      "parameters": {
+        "fromEmail": "ai-alerts@kuberafinance.com",
+        "toEmail": "cro@kuberafinance.com",
+        "subject": "AI Override Alert — Loan #{{ $json.loan_id }}",
+        "text": "Loan {{ $json.loan_id }} was overridden by {{ $json.overridden_by }}. AI recommended: {{ $json.ai_recommendation }}. Human decision: {{ $json.final_decision }}. Reason: {{ $json.override_reason }}.",
+        "options": {}
+      }
+    },
+    {
+      "id": "queue-retraining",
+      "name": "Queue Model Retraining",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [800, 100],
+      "parameters": {
+        "method": "POST",
+        "url": "https://ml-platform.kuberafinance.com/v1/retrain/queue",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "body": {
+          "model": "credit_risk_v2",
+          "trigger": "override_threshold_reached",
+          "override_count": "={{ $json.weekly_override_count }}"
+        }
+      }
+    },
+    {
+      "id": "respond-ok",
+      "name": "Respond 200 OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1000, 0],
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "{ "success": true, "logged": true }"
+      }
+    }
+  ],
+  "connections": {
+    "AI Decision Webhook": {
+      "main": [[{ "node": "Validate Payload", "type": "main", "index": 0 }]]
+    },
+    "Validate Payload": {
+      "main": [[{ "node": "Log to fact_ai_decisions", "type": "main", "index": 0 }]]
+    },
+    "Log to fact_ai_decisions": {
+      "main": [[{ "node": "Override Triggered?", "type": "main", "index": 0 }]]
+    },
+    "Override Triggered?": {
+      "main": [
+        [{ "node": "Notify CRO of Override", "type": "main", "index": 0 }],
+        [{ "node": "Queue Model Retraining", "type": "main", "index": 0 }]
+      ]
+    },
+    "Notify CRO of Override": {
+      "main": [[{ "node": "Respond 200 OK", "type": "main", "index": 0 }]]
+    },
+    "Queue Model Retraining": {
+      "main": [[{ "node": "Respond 200 OK", "type": "main", "index": 0 }]]
+    }
+  }
+}

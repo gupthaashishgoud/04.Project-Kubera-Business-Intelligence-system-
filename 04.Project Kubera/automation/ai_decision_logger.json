@@ -1,0 +1,123 @@
+{
+  "$schema": "https://n8n.io/schemas/workflow.json",
+  "name": "Project Kubera — AI Decision Logger & Override Tracker",
+  "description": "Logs every AI credit decision to database. If human overrides, captures reason and feeds back to model training pipeline.",
+  "version": 1,
+  "tags": ["finance", "ai", "credit-risk", "audit-trail"],
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none"
+  },
+  "nodes": [
+    {
+      "id": "trigger-webhook",
+      "name": "AI Decision Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kubera/ai-decision",
+        "responseMode": "responseNode"
+      }
+    },
+    {
+      "id": "log-decision",
+      "name": "Log to fact_ai_decisions",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [200, 0],
+      "parameters": {
+        "operation": "insert",
+        "table": "fact_ai_decisions",
+        "columns": {
+          "mapping": [
+            { "column": "loan_id", "value": "={{ $json.body.loan_id }}" },
+            { "column": "customer_id", "value": "={{ $json.body.customer_id }}" },
+            { "column": "ai_decision", "value": "={{ $json.body.ai_decision }}" },
+            { "column": "ai_confidence", "value": "={{ $json.body.ai_confidence }}" },
+            { "column": "risk_score", "value": "={{ $json.body.risk_score }}" },
+            { "column": "feature_importance", "value": "={{ JSON.stringify($json.body.feature_importance) }}" },
+            { "column": "decision_date", "value": "={{ $today }}" }
+          ]
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "postgres-kubera",
+          "name": "Kubera DB"
+        }
+      }
+    },
+    {
+      "id": "check-override",
+      "name": "Human Override?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [400, 0],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "={{ $json.body.human_override }}",
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    {
+      "id": "update-override",
+      "name": "Update Override Reason",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [600, -100],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE fact_ai_decisions SET human_override = true, human_decision = '{{ $json.body.human_decision }}', override_reason = '{{ $json.body.override_reason }}' WHERE loan_id = {{ $json.body.loan_id }} AND decision_date = '{{ $today }}';",
+        "options": {}
+      }
+    },
+    {
+      "id": "notify-model-team",
+      "name": "Notify Data Science Team",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [800, -100],
+      "parameters": {
+        "fromEmail": "ai-ops@kuberafinance.com",
+        "toEmail": "data-science@kuberafinance.com",
+        "subject": "AI Override Logged — Loan #{{ $json.body.loan_id }}",
+        "text": "AI Decision: {{ $json.body.ai_decision }} ({{ $json.body.ai_confidence }}% confidence)\nHuman Override: {{ $json.body.human_decision }}\nReason: {{ $json.body.override_reason }}\n\nThis case will be included in next model retraining (18 July 2026).",
+        "options": {}
+      }
+    },
+    {
+      "id": "ack-response",
+      "name": "Return Acknowledgment",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [600, 100],
+      "parameters": {
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "AI Decision Webhook": {
+      "main": [[{ "node": "Log to fact_ai_decisions", "type": "main", "index": 0 }]]
+    },
+    "Log to fact_ai_decisions": {
+      "main": [[{ "node": "Human Override?", "type": "main", "index": 0 }]]
+    },
+    "Human Override?": {
+      "main": [
+        [{ "node": "Update Override Reason", "type": "main", "index": 0 }],
+        [{ "node": "Return Acknowledgment", "type": "main", "index": 0 }]
+      ]
+    },
+    "Update Override Reason": {
+      "main": [[{ "node": "Notify Data Science Team", "type": "main", "index": 0 }]]
+    }
+  }
+}

@@ -1,0 +1,304 @@
+openapi: 3.0.3
+info:
+  title: Project Kubera API
+  description: |
+    NBFC Financial Operations & Decision Intelligence API.
+    Rs.18,000 Cr AUM | Rs.2,400 Cr Portfolio | 250 Branches | 1.2M Customers | AI-Assisted
+  version: 1.0.0
+  contact:
+    name: Guptha Ashish Goud
+    email: admin@kuberafinance.com
+
+servers:
+  - url: https://api.kuberafinance.com/v1
+    description: Production
+  - url: https://staging-api.kuberafinance.com/v1
+    description: Staging
+
+security:
+  - BearerAuth: []
+
+paths:
+  /portfolio/overview:
+    get:
+      summary: Portfolio overview
+      description: Returns AUM, loan portfolio, NPA, collection efficiency — used in Act 1
+      tags: [CEO Dashboard]
+      responses:
+        '200':
+          description: Portfolio summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  aum: { type: number, format: decimal }
+                  loan_portfolio: { type: number, format: decimal }
+                  npa_pct: { type: number }
+                  collection_efficiency: { type: number }
+                  product_mix:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProductMix'
+
+  /ai/decisions:
+    get:
+      summary: AI decision log
+      description: Returns AI decisions with human overrides — used in Act 4 + Act 8
+      tags: [AI Decision Engine]
+      parameters:
+        - name: date_from
+          in: query
+          schema: { type: string, format: date }
+        - name: date_to
+          in: query
+          schema: { type: string, format: date }
+        - name: override_only
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Decision list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AIDecision'
+                  summary:
+                    type: object
+                    properties:
+                      total_decisions: { type: integer }
+                      override_rate: { type: number }
+                      avg_confidence: { type: number }
+
+  /ai/decide:
+    post:
+      summary: Submit application for AI decision
+      description: Runs credit risk model and returns approve/reject/conditional with explanation — used in Act 4
+      tags: [AI Decision Engine]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoanApplication'
+      responses:
+        '200':
+          description: AI decision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIDecision'
+
+  /collections/prioritize:
+    get:
+      summary: AI-prioritized collections queue
+      description: Returns overdue accounts sorted by AI recovery probability — used in Act 5
+      tags: [Collections]
+      parameters:
+        - name: agent_id
+          in: query
+          schema: { type: integer }
+        - name: bucket
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Prioritized queue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CollectionCase'
+                  summary:
+                    type: object
+                    properties:
+                      total_overdue: { type: number, format: decimal }
+                      avg_recovery_prob: { type: number }
+
+  /finance/waterfall:
+    get:
+      summary: P&L waterfall
+      description: Returns quarterly P&L breakdown — used in Act 6
+      tags: [Finance]
+      parameters:
+        - name: quarter
+          in: query
+          schema: { type: string }
+        - name: fy_year
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: P&L waterfall
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  income_lines:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PLLine'
+                  expense_lines:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PLLine'
+                  net_profit: { type: number, format: decimal }
+                  roa: { type: number }
+                  roe: { type: number }
+
+  /compliance/status:
+    get:
+      summary: Regulatory compliance dashboard
+      description: Returns RBI, KYC, AML, audit status — used in Act 7
+      tags: [Compliance]
+      responses:
+        '200':
+          description: Compliance status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rbi_compliance_pct: { type: number }
+                  kyc_pending_count: { type: integer }
+                  aml_alerts: { type: integer }
+                  audit_findings_open: { type: integer }
+                  grievance_tat_pct: { type: number }
+
+  /strategy/scenarios:
+    get:
+      summary: Strategic what-if scenarios
+      description: Returns pre-modeled strategic scenarios — used in Act 8
+      tags: [Executive Strategy]
+      responses:
+        '200':
+          description: Scenario list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Scenario'
+
+  /strategy/model-performance:
+    get:
+      summary: AI model performance metrics
+      description: Returns model accuracy, drift alerts, retraining schedule — used in Act 8
+      tags: [Executive Strategy]
+      responses:
+        '200':
+          description: Model performance
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  models:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ModelPerformance'
+                  data_drift_alerts: { type: integer }
+                  last_retraining: { type: string, format: date }
+                  next_retraining: { type: string, format: date }
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ProductMix:
+      type: object
+      properties:
+        product_name: { type: string }
+        portfolio_pct: { type: number }
+        amount: { type: number, format: decimal }
+        npa_pct: { type: number }
+
+    AIDecision:
+      type: object
+      properties:
+        decision_id: { type: integer }
+        customer_name: { type: string }
+        loan_amount: { type: number, format: decimal }
+        ai_decision: { type: string, enum: [Approve, Reject, Conditional] }
+        ai_confidence: { type: number }
+        risk_score: { type: number }
+        feature_importance:
+          type: object
+          properties:
+            cibil_score: { type: number }
+            debt_to_income: { type: number }
+            employment_stability: { type: number }
+            collateral_value: { type: number }
+        human_decision: { type: string }
+        human_override: { type: boolean }
+        override_reason: { type: string }
+        outcome_status: { type: string }
+        decision_date: { type: string, format: date }
+
+    LoanApplication:
+      type: object
+      properties:
+        customer_id: { type: integer }
+        product_id: { type: integer }
+        loan_amount: { type: number, format: decimal }
+        income_monthly: { type: number, format: decimal }
+        cibil_score: { type: integer }
+        employment_type: { type: string }
+        collateral_value: { type: number, format: decimal }
+
+    CollectionCase:
+      type: object
+      properties:
+        collection_id: { type: integer }
+        customer_name: { type: string }
+        overdue_amount: { type: number, format: decimal }
+        days_overdue: { type: integer }
+        bucket: { type: string }
+        ai_recovery_prob: { type: number }
+        ai_recommendation: { type: string }
+        agent_name: { type: string }
+        last_visit_date: { type: string, format: date }
+
+    PLLine:
+      type: object
+      properties:
+        line_item: { type: string }
+        amount: { type: number, format: decimal }
+        category: { type: string, enum: [income, expense] }
+
+    Scenario:
+      type: object
+      properties:
+        scenario_id: { type: integer }
+        scenario_name: { type: string }
+        description: { type: string }
+        impact_summary: { type: string }
+        ai_recommendation: { type: string }
+        profit_uplift: { type: number, format: decimal }
+        risk_level: { type: string, enum: [Low, Medium, High] }
+
+    ModelPerformance:
+      type: object
+      properties:
+        model_name: { type: string }
+        metric_name: { type: string }
+        metric_value: { type: number }
+        benchmark: { type: number }
+        status: { type: string }
